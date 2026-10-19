@@ -1,0 +1,6 @@
+{
+    "configuration": "target_core=cm7,split=100_0,security=none",
+    "board": "arduino:mbed_giga:giga",
+    "port": "/dev/ttyACM0",
+    "sketch": "time-test.ino"
+}

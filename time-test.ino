@@ -153,19 +153,28 @@ OLEDWrapper* oledWrapper = nullptr;
 #include <time.h>
 class TimeSupport {
   private:
-    const unsigned long  NO_TIME = 0;
+    static const unsigned long  NO_TIME = 0;
   public:
+    static const int   N_DUMP_STRINGS = 4;
                 TimeSupport();
     CLOUD_TIME  getCurrentTime();
+    struct tm*  getBrokenDownTime(CLOUD_TIME t, struct tm* result);
     String      timeStr(CLOUD_TIME t);
     String      now();
     String      dump();
-    void        getDump(String s[3]);
+    void        getDump(String s[N_DUMP_STRINGS]);
 };
 
 TimeSupport::TimeSupport() {}
 CLOUD_TIME TimeSupport::getCurrentTime() {
   return cloudWrapper.getLocalTime();
+}
+struct tm* TimeSupport::getBrokenDownTime(CLOUD_TIME t, struct tm* result) {
+  if ((unsigned long)t == NO_TIME) {
+    return nullptr;
+  }
+  time_t rawTime = (time_t)t;
+  return localtime_r(&rawTime, result);
 }
 String TimeSupport::timeStr(CLOUD_TIME t) {
   if ((unsigned long)t == NO_TIME) {
@@ -181,27 +190,20 @@ String TimeSupport::timeStr(CLOUD_TIME t) {
   s.trim();
   return s;
 }
-
 String TimeSupport::now() {
   return timeStr(getCurrentTime());
 }
-
-String TimeSupport::dump() {
-  String s("getCurrentTime(): ");
-  s.concat((unsigned long)getCurrentTime());
-  s.concat(", now(): ");
-  s.concat(now());
-  s.concat(", NO_TIME: ");
-  s.concat(NO_TIME);
-  return s;
-}
-void TimeSupport::getDump(String s[3]) {
+void TimeSupport::getDump(String s[N_DUMP_STRINGS]) {
     s[0] = "getCurrentTime(): ";
     s[0].concat((unsigned long)getCurrentTime());
     s[1] = "now(): ";
     s[1].concat(now());
     s[2] = "NO_TIME: ";
     s[2].concat(NO_TIME);
+    struct tm brokenDownTime;
+    struct tm* result = getBrokenDownTime(getCurrentTime(), &brokenDownTime);
+    s[3] = "hour: ";
+    s[3].concat(result ? result->tm_hour : -1);
 }
 TimeSupport*    timeSupport = nullptr;
 
@@ -216,8 +218,8 @@ void setup() {
 void loop() {
   cloudWrapper.loop();
   oledWrapper->clear();
-  String s[3];
+  String s[timeSupport->N_DUMP_STRINGS];
   timeSupport->getDump(s);
-  oledWrapper->display(s, 3);
+  oledWrapper->display(s, timeSupport->N_DUMP_STRINGS);
   delay(3000);
 }
